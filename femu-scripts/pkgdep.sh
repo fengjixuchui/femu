@@ -11,7 +11,10 @@ if [[ -f /etc/debian_version ]]; then
 
 	# Additional dependencies
 	apt-get install -y libnuma-dev
+    apt-get install -y ninja-build
 else
     echo "pkgdep: unsupported system type ($SYSTEM), please install QEMU depencies manually"
 	exit 1
 fi
+
+echo "===> Dependency installation ... Done!"

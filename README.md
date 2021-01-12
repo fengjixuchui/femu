@@ -4,23 +4,24 @@
  | |__  | |__  | \  / | |  | |
  |  __| |  __| | |\/| | |  | |
  | |    | |____| |  | | |__| |
- |_|    |______|_|  |_|\____/ 
+ |_|    |______|_|  |_|\____/  -- A QEMU-based and DRAM-backed NVMe SSD Emulator
 
 ```
                               
 Contact Information
 --------------------
 
-**Maintainer**: [Huaicheng Li](people.cs.uchicago.edu/~huaicheng/) (huaicheng@cs.uchicago.edu)
+**Maintainer**: [Huaicheng Li](https://people.cs.uchicago.edu/~huaicheng/) (huaicheng@cs.uchicago.edu)
 
-If you have any suggestions, general discussions about FEMU or bug reports, please do not hesistate to contact Huaicheng. We would like to hear your thoughts!
+Please do not hesitate to contact Huaicheng for any suggestions/feedback, bug
+reports, or general discussions.
 
-Please cite our FEMU paper if you use FEMU. The bib entry is
+Please consider citing our FEMU paper if you use FEMU. The bib entry is
 
 ```
 @InProceedings{Li+18-FEMU, 
 Author = {Huaicheng Li and Mingzhe Hao and Michael Hao Tong 
-and Swaminathan Sundararaman and Matias Bjørling and Haryadi S. Gunawi},
+and Swaminathan Sundararaman and Matias Bj{\o}rling and Haryadi S. Gunawi},
 Title = "The CASE of FEMU: Cheap, Accurate, Scalable and Extensible Flash Emulator",
 Booktitle =  {Proceedings of 16th USENIX Conference on File and Storage Technologies (FAST)},
 Address = {Oakland, CA},
@@ -29,7 +30,6 @@ Year =  {2018}
 }
 
 ```
-
 
 Project Description
 -------------------
@@ -54,7 +54,6 @@ applications, instead of using decade-old disk trace files.
 
 Installation
 ------------
-
 
 1. Make sure you have installed necessary libraries for building QEMU. The
    dependencies can be installed by following instructions below:
@@ -84,7 +83,14 @@ Installation
   ```
   OS: Ubuntu 16.04.5 LTS
   gcc: 5.4.0
+  Ninja: 1.8.2
+  Python: 3.6 
   ```
+  
+> Notes: FEMU is now re-based on QEMU-5.2.0, which requires >=Python-3.6 and >=Ninjia-1.7 to build, 
+> check [here](https://wiki.qemu.org/ChangeLog/5.2#Build_Dependencies) for installing
+> these dependencies if ``pkgdep.sh`` doesn't solve all the requirements.)
+
 
 3. Prepare the VM image (For performance reasons, we suggest to use a server
    version guest OS [e.g. Ubuntu Server 16.04, 14.04])
@@ -129,7 +135,7 @@ $ sudo update-grub
   - If you correctly setup the aforementioned configurations, you should be
     able to see **text-based** VM login in the same terminal where you issue
     the running scripts.
-  - Or, more conviniently, FEMU running script has mapped host port `8080` to
+  - Or, more conveniently, FEMU running script has mapped host port `8080` to
     guest VM port `22`, thus, after you install and run `openssh-server` inside
     the VM, you can also ssh into the VM via below command line. (Please run it
     from your host machine)
@@ -141,28 +147,7 @@ $ sudo update-grub
 Run FEMU
 --------
 
-### 1. Before running ###
-
-- FEMU currently uses its own malloc'ed space for data storage, instead of
-  using image-files. However, FEMU still requires a image-file in QEMU command
-  line so as to cheat QEMU to probe correct internal numbers about the backend
-  storage.  Thus, if you want to emulate an SSD of 32GB, you need to create an
-  image file of 32GB on your local file system and attach it to QEMU. (This
-  limitation will be remove in near future)
-
-- FEMU relies on DRAM to provide accurate delay emulation, so make sure you
-  have enough DRAM free space for the emulated SSD.
-
-- Only **Guest Linux version >= 4.14** are supported as FEMU requires the
-  shadow doorbell buffer support in Linux NVMe driver implementation. (Linux
-  4.12, 4.13 are abandoned due to their wrong implementation in doorbell buffer
-  config support.)
-
-- To achieve best performance, users need to disable the
-  doorbell write operations in guest Linux NVMe driver since FEMU uses polling.
-  Please see [here](#ddb) on how to do this.
-
-### 2. Run FEMU as an emulated blackbox SSD (device-managed FTL) ###
+### 1. Run FEMU as blackbox SSDs (``Device-managed FTL`` mode) ###
 
 **TODO:** currently blackbox SSD parameters are hard-coded in
 `hw/block/femu/ftl/ftl.c`, please change them accordingly and re-compile FEMU.
@@ -174,7 +159,7 @@ script:
 ./run-blackbox.sh
 ```
 
-### 3. Run FEMU as an emulated whitebox SSD (OpenChannel-SSD) ###
+### 2. Run FEMU as whitebox SSDs (``OpenChannel-SSDs`` mode) ###
 
 ```Bash
 ./run-whitebox.sh
@@ -186,7 +171,7 @@ Currently FEMU only supports [OpenChannel Specification
 1.2](http://lightnvm.io/docs/Open-ChannelSSDInterfaceSpecification12-final.pdf),
 the newer 2.0 spec support in work-in-progress and will be added soon.
 
-### 4. Run FEMU without SSD logic emulation ###
+### 3. Run FEMU without SSD logic emulation (``NoSSD`` mode) ###
 
 ```Bash
 ./run-nossd.sh
@@ -195,71 +180,12 @@ the newer 2.0 spec support in work-in-progress and will be added soon.
 In this ``nossd`` mode, no SSD emulation logic (either blackbox or whitebox
 emulation) will be executed.  Base NVMe specification is supported, and FEMU in
 this case handles IOs as fast as possible. It can be used for basic performance
-benchmarking.
+benchmarking, as well as fast storage-class memory (SCM) emulation. 
 
-Tuning
-------
+### 4. Run FEMU as ZNS (Zoned-Namespace) SSDs (``ZNS-SSDs`` mode) ###
 
-
-Debugging
----------
-
-FEMU Design
------------
-Please refer to our FAST paper and design document (to come) ...
+To be released!
 
 
-Additonal Tweaks
-----------------
-
-1. <a name="ddb"></a>Disable doorbell writes in your guest Linux NVMe driver:
-
-**Note: Linux kernel version less than 4.14 has a wrong implementation over the
-doorbell buffer config support bit. (Fixed in this commit:
-223694b9ae8bfba99f3528d49d07a740af6ff95a). FEMU has been updated to fix this
-problem accordingly. Thus, in order for FEMU polling to work properly out of
-box, please use guest Linux >= 4.14.
-
-Otherwise, if you want to stick to 4.12/4.13, please make sure
-``NVME_OACS_DBBUF = 1 << 7`` in ``hw/block/nvme.h`` as this is what was wrongly
-implemented in 4.12/4.13**
-
-In Linux 4.14 source code, file ``drivers/nvme/host/pcie.c``, around ``line
-293``, you will find below function which is used to indicate whether to
-perform doorbell write operations.
-
-What we need to do is to add one sentence (``return false;``) after ``*dbbuf_db
-= value;``, as shown in the code block below.
-
-After this, recompile your guest Linux kernel.
-
-```C
-/* Update dbbuf and return true if an MMIO is required */
-static bool nvme_dbbuf_update_and_check_event(u16 value, u32 *dbbuf_db,
-					      volatile u32 *dbbuf_ei)
-{
-	if (dbbuf_db) {
-		u16 old_value;
-
-		/*
-		 * Ensure that the queue is written before updating
-		 * the doorbell in memory
-		 */
-		wmb();
-
-		old_value = *dbbuf_db;
-		*dbbuf_db = value;
-
-		/* Disable Doorbell Writes for FEMU: We only need to 
-		 * add the following statement */
-		return false;
-		/* End FEMU modification for NVMe driver */
-
-		if (!nvme_dbbuf_need_event(*dbbuf_ei, value, old_value))
-			return false;
-	}
-
-	return true;
-}
-```
+## For more details, please checkout the [Wiki](https://github.com/ucare-uchicago/femu/wiki)!
 
