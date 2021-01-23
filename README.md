@@ -1,3 +1,8 @@
+[![FEMU Version](https://img.shields.io/badge/FEMU-v5.2-brightgreen)](https://img.shields.io/badge/FEMU-v5.2-brightgreen)
+[![Build Status](https://travis-ci.com/ucare-uchicago/FEMU.svg?branch=master)](https://travis-ci.com/ucare-uchicago/FEMU)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+[![Platform](https://img.shields.io/badge/Platform-x86--64-brightgreen)](https://shields.io/)
+
 ```
   ______ ______ __  __ _    _ 
  |  ____|  ____|  \/  | |  | |
@@ -16,7 +21,8 @@ Contact Information
 Please do not hesitate to contact Huaicheng for any suggestions/feedback, bug
 reports, or general discussions.
 
-Please consider citing our FEMU paper if you use FEMU. The bib entry is
+Please consider citing our FEMU paper at FAST 2018 if you use FEMU. The bib
+entry is
 
 ```
 @InProceedings{Li+18-FEMU, 
@@ -34,12 +40,12 @@ Year =  {2018}
 Project Description
 -------------------
 
-Briefly speaking, FEMU is an NVMe SSD Emulator. Based upon QEMU/KVM, FEMU is
-exposed to Guest OS (Linux) as an NVMe block device (e.g. /dev/nvme0nX). It can
-be used as an emulated whitebox or blackbox SSD: (1). whitebox mode (a.k.a.
-Software-Defined Flash (SDF), or OpenChannel-SSD) with FTL residing in the host
-side (e.g. LightNVM) (2). blackbox mode with FTL managed by the device
-(like most of current commercial SSDs).
+Briefly speaking, FEMU is a fast, accurate, and scalable NVMe SSD Emulator.
+Based upon QEMU/KVM, FEMU is exposed to Guest OS (Linux) as an NVMe block
+device (e.g. /dev/nvme0nX). It can be used as an emulated whitebox or blackbox
+SSD: (1). whitebox mode (a.k.a.  Software-Defined Flash (SDF), or
+OpenChannel-SSD) with host side FTL (e.g. LightNVM) (2). blackbox mode with
+FTL managed by the device (like most of current commercial SSDs).
 
 FEMU tries to achieve benefits of both SSD Hardware platforms (e.g. CNEX
 OpenChannel SSD, OpenSSD, etc.) and SSD simulators (e.g. DiskSim+SSD, FlashSim,
@@ -51,6 +57,7 @@ can also support internal-SSD/FTL related research. Users can feel free to
 experiment with new FTL algorithms or SSD performance models to explore new SSD
 architecture innovations as well as benchmark the new arch changes with real
 applications, instead of using decade-old disk trace files.
+
 
 Installation
 ------------
@@ -78,15 +85,16 @@ Installation
 ```
   FEMU binary will appear as ``x86_64-softmmu/qemu-system-x86_64``
 
-  Tested host environment: 
-
-  ```
-  OS: Ubuntu 16.04.5 LTS
-  gcc: 5.4.0
-  Ninja: 1.8.2
-  Python: 3.6 
-  ```
+  Tested host environment:  
   
+  | Linux Distribution   | Kernel | Gcc   | Ninja  | Python |
+  | :---                 | :---:  | ---   | ---    | ---    |
+  | Gentoo               | 5.10   | 9.3.0 | 1.10.1 | 3.7.9  |
+  | Ubuntu 16.04.5       | 4.15.0 | 5.4.0 | 1.8.2  | 3.6.0  |
+  | Ubuntu 20.04.1       | 5.4.0  | 9.3.0 | 1.10.0 | 3.8.2  | 
+
+  Tested VM environment: ``Guest Linux kernel 5.10``
+
 > Notes: FEMU is now re-based on QEMU-5.2.0, which requires >=Python-3.6 and >=Ninjia-1.7 to build, 
 > check [here](https://wiki.qemu.org/ChangeLog/5.2#Build_Dependencies) for installing
 > these dependencies if ``pkgdep.sh`` doesn't solve all the requirements.)
@@ -97,12 +105,10 @@ Installation
 
   You can either build your own VM image, or use the VM image provided by us
 
-  **Option 1**: Use our VM image, please download it from our
-  [FEMU-VM-image-site](https://goo.gl/forms/NptPVEOy9EnwN70Y2) and save it as
-  `$HOME/images/u14s.qcow2`. After you fill in the query, VM image downloading
-  link will be sent to your email address shortly. ***Please make sure to provide
-  a correct email address when filling the above form. Contact
-  [Huaicheng Li](mailto:huaicheng@cs.uchicago.edu) upon any problems.***
+  **Option 1**: Use our VM image file, please download it from our
+  [FEMU-VM-image-site](https://forms.gle/nEZaEe2fkj5B1bxt9). After you fill in
+  the form, VM image downloading instructions will be sent to your email
+  address shortly.
 
   **Option 2**: Build your own VM image by following guides (e.g.
   [here](https://help.ubuntu.com/community/Installation/QemuEmulator#Installation_of_an_operating_system_from_ISO_to_the_QEMU_environment)).
@@ -147,7 +153,7 @@ $ sudo update-grub
 Run FEMU
 --------
 
-### 1. Run FEMU as blackbox SSDs (``Device-managed FTL`` mode) ###
+### 1. Run FEMU as blackbox SSDs (``Device-managed FTL`` or ``BBSSD`` mode) ###
 
 **TODO:** currently blackbox SSD parameters are hard-coded in
 `hw/block/femu/ftl/ftl.c`, please change them accordingly and re-compile FEMU.
@@ -159,17 +165,23 @@ script:
 ./run-blackbox.sh
 ```
 
-### 2. Run FEMU as whitebox SSDs (``OpenChannel-SSDs`` mode) ###
+### 2. Run FEMU as whitebox SSDs (ak.a. ``OpenChannel-SSD`` or ``OCSSD`` mode) ###
+
+Both OCSSD [Specification
+1.2](http://lightnvm.io/docs/Open-ChannelSSDInterfaceSpecification12-final.pdf)
+and [Specification 2.0](http://lightnvm.io/docs/OCSSD-2_0-20180129.pdf) are
+supported, to run FEMU OCSSD mode:
 
 ```Bash
+# Tested with Guest Linux Kernel 5.10.0 and newest nvme-cli compiled from source
 ./run-whitebox.sh
 ```
 
+By default, FEMU will run OCSSD in 2.0 mode. To run OCSSD in 1.2, make sure
+``OCVER=1`` is set in the ``run-whitebox.sh``
+
 Inside the VM, you can play with LightNVM.
 
-Currently FEMU only supports [OpenChannel Specification
-1.2](http://lightnvm.io/docs/Open-ChannelSSDInterfaceSpecification12-final.pdf),
-the newer 2.0 spec support in work-in-progress and will be added soon.
 
 ### 3. Run FEMU without SSD logic emulation (``NoSSD`` mode) ###
 
@@ -180,7 +192,8 @@ the newer 2.0 spec support in work-in-progress and will be added soon.
 In this ``nossd`` mode, no SSD emulation logic (either blackbox or whitebox
 emulation) will be executed.  Base NVMe specification is supported, and FEMU in
 this case handles IOs as fast as possible. It can be used for basic performance
-benchmarking, as well as fast storage-class memory (SCM) emulation. 
+benchmarking, as well as fast storage-class memory (SCM, or Intel Optane SSD)
+emulation. 
 
 ### 4. Run FEMU as ZNS (Zoned-Namespace) SSDs (``ZNS-SSDs`` mode) ###
 
