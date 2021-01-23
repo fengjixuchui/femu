@@ -10,7 +10,7 @@
 # VM image directory
 IMGDIR=$HOME/images
 # Virtual machine disk image
-OSIMGF=$IMGDIR/u16s.raw
+OSIMGF=$IMGDIR/u20s.qcow2
 
 # OCSSD Spec version (1 for Spec 1.2, and 2 for Spec 2.0)
 OCVER=2
@@ -78,14 +78,14 @@ FEMU_OPTIONS=${FEMU_OPTIONS}",femu_mode=0"
 #-------------------------------------------------------------------------------
 # Launch the FEMU VM
 sudo x86_64-softmmu/qemu-system-x86_64 \
-    -name "FEMU-OCSSD20" \
+    -name "FEMU-OCSSD-VM" \
     -enable-kvm \
     -cpu host \
     -smp 4 \
     -m 4G \
     -device virtio-scsi-pci,id=scsi0 \
     -device scsi-hd,drive=hd0 \
-    -drive file=$OSIMGF,if=none,aio=native,cache=none,format=raw,id=hd0 \
+    -drive file=$OSIMGF,if=none,aio=native,cache=none,format=qcow2,id=hd0 \
     ${FEMU_OPTIONS} \
     -net user,hostfwd=tcp::8080-:22 \
     -net nic,model=virtio \
